@@ -350,3 +350,29 @@ code{
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important}
 }
+
+/* ------------------------------ author ------------------------------ */
+.author{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  margin:30px auto 0;padding:18px 22px;max-width:520px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+}
+.author-photo{
+  width:72px;height:72px;flex:0 0 72px;border-radius:50%;object-fit:cover;
+  object-position:50% 22%;                 /* keep the face centred in the circle */
+  border:2px solid var(--surface);box-shadow:0 0 0 2px var(--green-line);
+  background:var(--surface-2);
+}
+.author-text{display:flex;flex-direction:column;gap:1px;min-width:0}
+.author-text strong{
+  font-family:var(--display);font-size:1.06rem;font-weight:700;
+  letter-spacing:-.01em;color:var(--ink);
+}
+.author-role{font-size:.82rem;color:var(--green-dark);font-weight:600}
+.author-org{font-size:.78rem;color:var(--muted);line-height:1.4}
+.author-org i{font-style:normal;color:var(--muted-2);padding:0 2px}
+
+@media (max-width:420px){
+  .author{flex-direction:column;text-align:center;gap:12px;padding:20px 16px}
+  .author-text{align-items:center}
+}
