@@ -302,6 +302,8 @@
     renderReview();
     show("#screen-result");
 
+    if (accuracy > CONFIG.CONFETTI_MIN_ACCURACY) setTimeout(confettiBurst, 220);
+
     if (CONFIG.PROGRESS_TRACKING) sendProgress("completed");
     submitResult(buildPayload(accuracy, totalSecs));
     if (CONFIG.SHOW_LEADERBOARD) loadLeaderboard();
@@ -354,6 +356,114 @@
         '<div class="review-topic">' + escapeHTML(r.topic) + "</div>";
       box.appendChild(el);
     });
+  }
+
+  /* ------------------------------ confetti ------------------------------ */
+  /* Self-contained canvas burst - no library, so nothing extra to load and
+     nothing to break if a CDN is blocked on the college network. */
+  function confettiBurst() {
+    if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Browsers pause rAF in a hidden tab, so a burst started there would just
+    // sit frozen until the student came back. Skip it instead.
+    if (document.hidden) return;
+
+    const old = document.querySelector(".confetti");
+    if (old) old.remove();                       // a replayed round starts clean
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "confetti";
+    canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    function size() {
+      canvas.width  = innerWidth  * dpr;
+      canvas.height = innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    size();
+    addEventListener("resize", size);
+
+    const COLORS = ["#16a34a", "#2563eb", "#d97706", "#dc2626", "#0ea5e9", "#a855f7", "#facc15"];
+    const parts = [];
+    const narrow = innerWidth < 700;
+
+    // Two cannons firing inwards from the bottom corners.
+    function cannon(x, y, angle, count) {
+      for (let i = 0; i < count; i++) {
+        const spread = (Math.random() - 0.5) * 0.7;
+        const speed  = 680 + Math.random() * 520;
+        parts.push({
+          x: x, y: y,
+          vx: Math.cos(angle + spread) * speed,
+          vy: Math.sin(angle + spread) * speed,
+          w: 6 + Math.random() * 6,
+          h: 9 + Math.random() * 7,
+          rot: Math.random() * Math.PI,
+          vrot: (Math.random() - 0.5) * 14,
+          color: COLORS[(Math.random() * COLORS.length) | 0],
+          life: 0,
+          ttl: 2.9 + Math.random() * 1.5
+        });
+      }
+    }
+    const n = narrow ? 55 : 90;
+    cannon(0, innerHeight, -Math.PI / 3.1, n);              // bottom-left
+    cannon(innerWidth, innerHeight, -Math.PI + Math.PI / 3.1, n);  // bottom-right
+
+    // Tuned so the arc just reaches the top of the screen and clears in ~3s.
+    const GRAVITY = 850, DRAG = 0.995;
+    let last = performance.now();
+    let done = false;
+
+    function cleanup() {
+      if (done) return;
+      done = true;
+      clearTimeout(failsafe);
+      removeEventListener("resize", size);
+      canvas.remove();
+    }
+    // Wall-clock backstop: if the tab is hidden mid-flight the frame loop
+    // stalls, so this clears the canvas even when no frames ever arrive.
+    const failsafe = setTimeout(cleanup, 9000);
+
+    function frame(now) {
+      const dt = Math.min((now - last) / 1000, 0.05);   // clamp after a tab switch
+      last = now;
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+      let alive = 0;
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        p.life += dt;
+        if (p.life > p.ttl) continue;
+
+        p.vy += GRAVITY * dt;
+        p.vx *= DRAG;
+        p.x  += p.vx * dt;
+        p.y  += p.vy * dt;
+        p.rot += p.vrot * dt;
+
+        if (p.y - 40 > innerHeight) continue;           // fallen past the bottom
+        alive++;
+
+        const fade = p.life > p.ttl - 0.6 ? (p.ttl - p.life) / 0.6 : 1;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, fade);
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        // squashing the width as it spins reads as a flat strip tumbling
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w * Math.abs(Math.cos(p.rot * 1.6)), p.h);
+        ctx.restore();
+      }
+
+      if (done) return;
+      if (alive > 0) requestAnimationFrame(frame);
+      else cleanup();
+    }
+    requestAnimationFrame(frame);
   }
 
   /* --------------------------- sheet submission --------------------------- */

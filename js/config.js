@@ -56,6 +56,13 @@ const CONFIG = {
   PROGRESS_TRACKING: true,
   PROGRESS_EVERY:    10,   // send a checkpoint every N questions
 
+  /* ------------------------- Celebration ------------------------------ */
+
+  /* Confetti fires at the end when accuracy is ABOVE this percentage.
+     Set to 0 to celebrate every round, or 101 to switch it off entirely.
+     It is skipped automatically for anyone who prefers reduced motion. */
+  CONFETTI_MIN_ACCURACY: 70,
+
   /* Behaviour */
   SHUFFLE_QUESTIONS: true,
   SHUFFLE_OPTIONS:   true,
